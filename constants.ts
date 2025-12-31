@@ -1,11 +1,26 @@
 
 import { Song } from './types';
 
+// Game Dimensions & Physics
 export const LANES = 4;
-export const TILE_HEIGHT = 22; 
-export const INITIAL_SPEED = 1.35; 
-export const ACCELERATION = 0.0005; 
-export const SPAWN_THRESHOLD = 18.0; 
+export const TILE_HEIGHT = 22;
+export const INITIAL_SPEED = 1.35;
+export const ACCELERATION = 0.0005;
+export const SPAWN_THRESHOLD = 18.0;
+
+// Timing & Gameplay Constants
+export const GRACE_PERIOD_MS = 400; // Grace period after game start (no miss penalty)
+export const COUNTDOWN_INTERVAL_MS = 900; // Countdown timer interval
+export const HIT_BUFFER_VH = 8.5; // Hit detection buffer zone (viewport height %)
+
+// Audio Constants
+export const MASTER_VOLUME = 0.35; // Master volume level (0-1)
+
+// Visual Feedback Constants
+export const LANE_FEEDBACK_DURATION_MS = 120; // Lane flash feedback duration
+export const FEEDBACK_FLOAT_DURATION_MS = 600; // Floating score text duration
+export const PARTICLE_LIFETIME_MS = 400; // Particle animation lifetime
+export const PARTICLES_PER_HIT = 8; // Number of particles spawned per hit 
 
 export const PIANO_FREQUENCIES: { [key: string]: number } = {
   'G2': 98.00, 'A2': 110.00, 'B2': 123.47,
@@ -79,6 +94,3 @@ export const SONGS: Song[] = [
     ]
   }
 ];
-
-export const LANE_COLORS = ['bg-slate-900', 'bg-slate-900', 'bg-slate-900', 'bg-slate-900'];
-export const LANE_GLOWS = ['border-blue-500/30', 'border-purple-500/30', 'border-cyan-500/30', 'border-indigo-500/30'];

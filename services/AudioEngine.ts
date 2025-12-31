@@ -1,5 +1,5 @@
 
-import { PIANO_FREQUENCIES } from '../constants';
+import { PIANO_FREQUENCIES, MASTER_VOLUME } from '../constants';
 import { InstrumentType } from '../types';
 
 class AudioEngine {
@@ -19,7 +19,7 @@ class AudioEngine {
       this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 44100 });
       
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(MASTER_VOLUME, this.ctx.currentTime);
       
       this.silkFilter = this.ctx.createBiquadFilter();
       this.silkFilter.type = 'lowpass';
@@ -52,25 +52,46 @@ class AudioEngine {
   stopAllSounds() {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    
-    this.activeNotes.forEach((note) => {
+
+    // Create a copy to avoid modification during iteration
+    const notesToStop = Array.from(this.activeNotes);
+    this.activeNotes.clear();
+
+    notesToStop.forEach((note) => {
+      // Fade out gains
       note.gains.forEach(g => {
-        g.gain.cancelScheduledValues(now);
-        g.gain.setValueAtTime(g.gain.value, now);
-        g.gain.linearRampToValueAtTime(0, now + 0.04);
+        try {
+          g.gain.cancelScheduledValues(now);
+          g.gain.setValueAtTime(g.gain.value, now);
+          g.gain.linearRampToValueAtTime(0, now + 0.04);
+        } catch (e) {
+          // Ignore if node already stopped
+        }
       });
 
+      // Stop oscillators immediately after fade
+      note.nodes.forEach(n => {
+        if (n instanceof OscillatorNode) {
+          try {
+            n.stop(now + 0.05);
+          } catch (e) {
+            // Already stopped
+          }
+        }
+      });
+
+      // Disconnect after stopping
       setTimeout(() => {
         note.nodes.forEach(n => {
-          if (n instanceof OscillatorNode) {
-            try { n.stop(); n.disconnect(); } catch (e) {}
-          } else {
-            try { n.disconnect(); } catch (e) {}
+          try {
+            n.disconnect();
+          } catch (e) {
+            // Already disconnected
           }
         });
       }, 100);
     });
-    this.activeNotes.clear();
+
     this.melodyIndex = 0;
   }
 
@@ -130,17 +151,26 @@ class AudioEngine {
     const noteRef = { nodes: [body, bloom, bodyGain, bloomGain], gains: [bodyGain, bloomGain] };
     this.activeNotes.add(noteRef);
 
+    // Calculate exact cleanup time based on note duration
+    const noteDuration = attack + decay + clampedRelease;
+    const stopTime = now + noteDuration;
+
+    // Schedule oscillator stops
+    body.stop(stopTime);
+    bloom.stop(stopTime);
+
+    // Clean up after note finishes
     setTimeout(() => {
       this.activeNotes.delete(noteRef);
-      try { 
-        body.stop(); 
+      try {
         body.disconnect();
-        bloom.stop();
         bloom.disconnect();
         bodyGain.disconnect();
         bloomGain.disconnect();
-      } catch (e) {}
-    }, (attack + decay + clampedRelease + 0.1) * 1000);
+      } catch (e) {
+        // Already disconnected
+      }
+    }, (noteDuration + 0.1) * 1000);
   }
 
   playNextNote() {

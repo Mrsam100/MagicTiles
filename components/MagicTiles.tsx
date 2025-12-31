@@ -1,8 +1,23 @@
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Tile, ScoreData } from '../types';
-import { LANES, TILE_HEIGHT, INITIAL_SPEED, ACCELERATION, SPAWN_THRESHOLD } from '../constants';
+import {
+  LANES,
+  TILE_HEIGHT,
+  INITIAL_SPEED,
+  ACCELERATION,
+  SPAWN_THRESHOLD,
+  GRACE_PERIOD_MS,
+  COUNTDOWN_INTERVAL_MS,
+  HIT_BUFFER_VH,
+  LANE_FEEDBACK_DURATION_MS,
+  FEEDBACK_FLOAT_DURATION_MS,
+  PARTICLE_LIFETIME_MS,
+  PARTICLES_PER_HIT
+} from '../constants';
 import { audioService } from '../services/AudioEngine';
+import { CleanupTimer } from '../utils/timers';
+import { useKeyboardControls } from '../hooks/useKeyboardControls';
 
 interface Props {
   onGameOver: (score: ScoreData) => void;
@@ -63,11 +78,12 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
   const [isMissed, setIsMissed] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [countdown, setCountdown] = useState<number | string | null>(3);
-  
+  const [isPaused, setIsPaused] = useState(false);
+
   const gameLoopRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const lastTileIdRef = useRef(0);
-  const lanePoolRef = useRef<number[]>([]); 
+  const lanePoolRef = useRef<number[]>([]);
   const tilesRef = useRef<Tile[]>([]);
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
@@ -78,6 +94,7 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
   const feedbackIdRef = useRef(0);
   const isPausedRef = useRef(true);
   const startGraceTimeRef = useRef<number>(0);
+  const timerCleanup = useRef(new CleanupTimer());
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -116,46 +133,58 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
 
   const triggerGameOver = useCallback((missedTileId?: number) => {
     if (gameOverCalledRef.current) return;
-    if (isPausedRef.current || (Date.now() - startGraceTimeRef.current < 400)) return;
+    if (isPausedRef.current || (Date.now() - startGraceTimeRef.current < GRACE_PERIOD_MS)) return;
 
     gameOverCalledRef.current = true;
     audioService.stopAllSounds();
     audioService.playMiss();
-    
-    setIsMissed(true); 
+
+    setIsMissed(true);
     setIsShaking(true);
-    
-    setTimeout(() => setIsShaking(false), 350);
-    
+
+    timerCleanup.current.setTimeout(() => setIsShaking(false), 350);
+
     if (missedTileId !== undefined) {
       tilesRef.current = tilesRef.current.map(t => t.id === missedTileId ? { ...t, missed: true } : t);
       setTiles([...tilesRef.current]);
     }
-    
-    setTimeout(() => {
+
+    timerCleanup.current.setTimeout(() => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
-      onGameOver({ 
-        score: scoreRef.current, 
-        perfectHits: 0, 
-        combo: comboRef.current, 
-        maxCombo: maxComboRef.current, 
-        highScore: 0 
+      onGameOver({
+        score: scoreRef.current,
+        perfectHits: 0,
+        combo: comboRef.current,
+        maxCombo: maxComboRef.current,
+        highScore: 0
       });
-    }, 900);
+    }, COUNTDOWN_INTERVAL_MS);
   }, [onGameOver]);
 
-  const update = useCallback((timestamp: number) => {
+  // Store stable references to avoid recreating the game loop
+  const spawnTileRef = useRef(spawnTile);
+  const triggerGameOverRef = useRef(triggerGameOver);
+
+  // Update refs when functions change
+  useEffect(() => {
+    spawnTileRef.current = spawnTile;
+    triggerGameOverRef.current = triggerGameOver;
+  }, [spawnTile, triggerGameOver]);
+
+  // Stable game loop function
+  const updateRef = useRef<(timestamp: number) => void>();
+  updateRef.current = (timestamp: number) => {
     if (gameOverCalledRef.current) return;
-    
+
     if (isPausedRef.current) {
       lastTimeRef.current = timestamp;
-      gameLoopRef.current = requestAnimationFrame(update);
+      gameLoopRef.current = requestAnimationFrame(updateRef.current!);
       return;
     }
 
     if (!lastTimeRef.current) {
       lastTimeRef.current = timestamp;
-      gameLoopRef.current = requestAnimationFrame(update);
+      gameLoopRef.current = requestAnimationFrame(updateRef.current!);
       return;
     }
 
@@ -171,7 +200,7 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
     for (let i = 0; i < tilesRef.current.length; i++) {
       const tile = tilesRef.current[i];
       const nextY = tile.y + (speedRef.current * timeStep);
-      
+
       if (nextY > 105 && !tile.hit && !tile.missed) {
         hasMissed = true;
         missedId = tile.id;
@@ -185,7 +214,7 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
     }
 
     if (hasMissed) {
-      triggerGameOver(missedId);
+      triggerGameOverRef.current(missedId);
       return;
     }
 
@@ -193,55 +222,109 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
 
     const lastTile = tilesRef.current[tilesRef.current.length - 1];
     if (!lastTile || lastTile.y >= (0 - (TILE_HEIGHT - SPAWN_THRESHOLD))) {
-      spawnTile((lastTile ? lastTile.y - SPAWN_THRESHOLD : -TILE_HEIGHT) - TILE_HEIGHT);
+      spawnTileRef.current((lastTile ? lastTile.y - SPAWN_THRESHOLD : -TILE_HEIGHT) - TILE_HEIGHT);
     }
 
     speedRef.current += (ACCELERATION * timeStep);
     setTiles([...tilesRef.current]);
-    gameLoopRef.current = requestAnimationFrame(update);
-  }, [spawnTile, triggerGameOver]);
+    gameLoopRef.current = requestAnimationFrame(updateRef.current!);
+  };
 
   useEffect(() => {
     audioService.init();
     audioService.resetMelody();
-    spawnTile();
+    spawnTileRef.current();
+
     let timer = 3;
     const interval = setInterval(() => {
       timer -= 1;
       if (timer === 0) setCountdown("GO!");
-      else if (timer < 0) { 
-        setCountdown(null); 
-        isPausedRef.current = false; 
+      else if (timer < 0) {
+        setCountdown(null);
+        isPausedRef.current = false;
         startGraceTimeRef.current = Date.now();
-        clearInterval(interval); 
+        clearInterval(interval);
       }
       else setCountdown(timer);
-    }, 900);
-    gameLoopRef.current = requestAnimationFrame(update);
-    return () => { 
-      clearInterval(interval); 
-      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); 
-      audioService.stopAllSounds(); 
+    }, COUNTDOWN_INTERVAL_MS);
+
+    // Start the game loop
+    const startGameLoop = (timestamp: number) => {
+      updateRef.current?.(timestamp);
     };
-  }, [spawnTile, update]);
+    gameLoopRef.current = requestAnimationFrame(startGameLoop);
+
+    return () => {
+      clearInterval(interval);
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+        gameLoopRef.current = 0;
+      }
+      audioService.stopAllSounds();
+      timerCleanup.current.clearAll();
+    };
+  }, []); // Empty dependency array - runs once on mount
+
+  // Keyboard lane press handler
+  const handleLanePress = useCallback((laneIndex: number) => {
+    if (!containerRef.current) return;
+
+    // Calculate center of lane for visual feedback
+    const rect = containerRef.current.getBoundingClientRect();
+    const laneWidth = rect.width / LANES;
+    const clientX = rect.left + (laneIndex + 0.5) * laneWidth;
+    const clientY = rect.top + rect.height * 0.7; // 70% down the screen
+
+    handleInteraction(laneIndex, clientX, clientY);
+  }, []);
+
+  // Enable keyboard controls when game is active
+  useKeyboardControls({
+    onLanePress: handleLanePress,
+    isActive: countdown === null && !gameOverCalledRef.current && !isPaused
+  });
+
+  // Toggle pause function
+  const togglePause = useCallback(() => {
+    // Can't pause during countdown or if game is over
+    if (countdown !== null || gameOverCalledRef.current) return;
+
+    setIsPaused(prev => {
+      const newPaused = !prev;
+      isPausedRef.current = newPaused;
+      return newPaused;
+    });
+  }, [countdown]);
+
+  // Keyboard pause listener (ESC/P keys)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        togglePause();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [togglePause]);
 
   const handleInteraction = (laneIndex: number, clientX: number, clientY: number) => {
     if (gameOverCalledRef.current || isPausedRef.current || !containerRef.current) return;
-    if (Date.now() - startGraceTimeRef.current < 200) return;
+    if (Date.now() - startGraceTimeRef.current < GRACE_PERIOD_MS) return;
 
     audioService.init();
 
     // Visual lane feedback
     setActiveLanes(prev => { const next = [...prev]; next[laneIndex] = true; return next; });
-    setTimeout(() => { setActiveLanes(prev => { const next = [...prev]; next[laneIndex] = false; return next; }); }, 120);
+    timerCleanup.current.setTimeout(() => { setActiveLanes(prev => { const next = [...prev]; next[laneIndex] = false; return next; }); }, LANE_FEEDBACK_DURATION_MS);
 
     const tilesInLane = tilesRef.current.filter(t => t.lane === laneIndex && !t.hit);
     const rect = containerRef.current.getBoundingClientRect();
     const tapY_vh = ((clientY - rect.top) / rect.height) * 100;
 
-    const HIT_BUFFER = 8.5; 
     const hitTile = tilesInLane.find(t => {
-      return tapY_vh >= (t.y - HIT_BUFFER) && tapY_vh <= (t.y + TILE_HEIGHT + HIT_BUFFER);
+      return tapY_vh >= (t.y - HIT_BUFFER_VH) && tapY_vh <= (t.y + TILE_HEIGHT + HIT_BUFFER_VH);
     });
 
     if (hitTile) {
@@ -257,26 +340,26 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
       setCombo(comboRef.current);
 
       const fId = ++feedbackIdRef.current;
-      const newFeedback: FloatingFeedback = { 
-        id: fId, 
-        text: word.text, 
-        points: "+1", 
-        x: clientX, 
-        y: clientY, 
-        color: word.color 
+      const newFeedback: FloatingFeedback = {
+        id: fId,
+        text: word.text,
+        points: "+1",
+        x: clientX,
+        y: clientY,
+        color: word.color
       };
       setFeedbacks(prev => [...prev, newFeedback]);
-      setTimeout(() => setFeedbacks(current => current.filter(f => f.id !== fId)), 600);
+      timerCleanup.current.setTimeout(() => setFeedbacks(current => current.filter(f => f.id !== fId)), FEEDBACK_FLOAT_DURATION_MS);
 
       const pIdBase = ++particleIdRef.current * 10;
-      const newPs = Array.from({ length: 8 }).map((_, idx) => ({ 
-        id: pIdBase + idx, 
-        x: clientX + (Math.random() - 0.5) * 60, 
-        y: clientY + (Math.random() - 0.5) * 60, 
-        color: "#ffffff" 
+      const newPs = Array.from({ length: PARTICLES_PER_HIT }).map((_, idx) => ({
+        id: pIdBase + idx,
+        x: clientX + (Math.random() - 0.5) * 60,
+        y: clientY + (Math.random() - 0.5) * 60,
+        color: "#ffffff"
       }));
       setParticles(prev => [...prev, ...newPs]);
-      setTimeout(() => setParticles(p => p.filter(x => x.id < pIdBase || x.id >= pIdBase + 8)), 400);
+      timerCleanup.current.setTimeout(() => setParticles(p => p.filter(x => x.id < pIdBase || x.id >= pIdBase + PARTICLES_PER_HIT)), PARTICLE_LIFETIME_MS);
 
       tilesRef.current = tilesRef.current.filter(t => t.id !== hitTile.id);
       setTiles([...tilesRef.current]);
@@ -303,6 +386,17 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
       )}
 
       <GameHUD score={score} combo={combo} />
+
+      {/* Pause Button (Desktop only, hidden during countdown) */}
+      {countdown === null && (
+        <button
+          onClick={togglePause}
+          className="absolute top-4 right-4 z-[150] w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 hidden sm:flex"
+          aria-label={isPaused ? "Resume game" : "Pause game"}
+        >
+          <i className={`fa-solid ${isPaused ? 'fa-play' : 'fa-pause'} text-[#0f1c3a] text-sm`}></i>
+        </button>
+      )}
 
       <div className="flex-1 flex w-full relative z-10">
         {[...Array(LANES)].map((_, i) => (
@@ -351,6 +445,39 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
            </span>
         </div>
       ))}
+
+      {/* Pause Overlay */}
+      {isPaused && (
+        <div className="absolute inset-0 z-[300] bg-[#0f1c3a]/95 flex flex-col items-center justify-center gap-6 px-6">
+          <div className="text-center mb-4">
+            <i className="fa-solid fa-pause text-white text-6xl mb-4 opacity-90"></i>
+            <h2 className="text-3xl font-orbitron font-black text-white uppercase tracking-tight mb-2">Paused</h2>
+            <p className="text-white/70 font-orbitron text-xs tracking-widest uppercase">Take a breath</p>
+          </div>
+
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <button
+              onClick={togglePause}
+              className="w-full py-4 bg-white text-[#0f1c3a] font-orbitron font-black text-xs tracking-[0.3em] rounded-2xl shadow-xl hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
+            >
+              <i className="fa-solid fa-play text-xs"></i>
+              Resume
+            </button>
+
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full py-3 bg-transparent text-white/80 font-orbitron font-black text-xs tracking-[0.3em] rounded-2xl hover:bg-white/10 active:scale-95 transition-all uppercase border-2 border-white/20"
+            >
+              <i className="fa-solid fa-arrow-left text-xs mr-2"></i>
+              Quit to Menu
+            </button>
+          </div>
+
+          <p className="text-white/50 font-orbitron text-[10px] tracking-wider uppercase mt-4">
+            Press <kbd className="px-2 py-1 bg-white/10 rounded">ESC</kbd> or <kbd className="px-2 py-1 bg-white/10 rounded">P</kbd> to resume
+          </p>
+        </div>
+      )}
 
       <style>{`
         @keyframes feedback-float {

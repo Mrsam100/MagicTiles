@@ -47,7 +47,7 @@ const GameOver: React.FC<Props> = ({ username, scoreData, review, onRestart, onM
           <h2 className={`text-3xl font-orbitron font-black mb-1 tracking-tighter uppercase leading-none shimmer-text ${isNewRecord ? 'text-[#0f1c3a]' : 'text-red-600'}`}>
             {isNewRecord ? 'LEGENDARY!' : `NOT QUITE, ${displayUsername}`}
           </h2>
-          <p className="text-slate-400 font-orbitron font-black text-[9px] tracking-[0.5em] uppercase mt-2 opacity-60">
+          <p className="text-slate-600 font-orbitron font-black text-[12px] tracking-[0.4em] uppercase mt-2 opacity-70">
             PERFORMANCE ENDED
           </p>
         </div>
@@ -59,7 +59,7 @@ const GameOver: React.FC<Props> = ({ username, scoreData, review, onRestart, onM
                 <i className="fa-solid fa-bolt-lightning text-5xl text-white rotate-12"></i>
               </div>
               <div className="relative z-10">
-                <p className="text-[9px] text-slate-400 font-orbitron font-black uppercase mb-1 tracking-[0.3em] opacity-70">FINAL SCORE</p>
+                <p className="text-[11px] text-slate-300 font-orbitron font-black uppercase mb-1 tracking-[0.3em] opacity-80">FINAL SCORE</p>
                 <p className="text-5xl font-orbitron text-white font-black tracking-tighter animate-score-bounce">{scoreData.score.toLocaleString()}</p>
               </div>
            </div>
@@ -68,11 +68,11 @@ const GameOver: React.FC<Props> = ({ username, scoreData, review, onRestart, onM
         {/* Secondary Stats Cards */}
         <div className="w-full grid grid-cols-2 gap-3 mb-6">
           <div className={`bg-slate-50 p-4 rounded-[1.5rem] border border-slate-100 text-center shadow-sm transform transition-all duration-700 delay-200 ${showStats ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
-            <p className="text-[8px] text-slate-400 font-orbitron font-black uppercase mb-1 tracking-widest">PERSONAL BEST</p>
+            <p className="text-[11px] text-slate-600 font-orbitron font-black uppercase mb-1 tracking-widest opacity-80">PERSONAL BEST</p>
             <p className="text-lg font-orbitron text-[#0f1c3a] font-black tracking-tighter">{scoreData.highScore.toLocaleString()}</p>
           </div>
           <div className={`bg-slate-50 p-4 rounded-[1.5rem] border border-slate-100 text-center shadow-sm transform transition-all duration-700 delay-300 ${showStats ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
-            <p className="text-[8px] text-slate-400 font-orbitron font-black uppercase mb-1 tracking-widest">MAX COMBO</p>
+            <p className="text-[11px] text-slate-600 font-orbitron font-black uppercase mb-1 tracking-widest opacity-80">MAX COMBO</p>
             <p className="text-lg font-orbitron text-[#0f1c3a] font-black tracking-tighter">x{scoreData.maxCombo}</p>
           </div>
         </div>
@@ -80,9 +80,9 @@ const GameOver: React.FC<Props> = ({ username, scoreData, review, onRestart, onM
         {/* AI Analysis Box */}
         <div className={`relative w-full mb-8 transform transition-all duration-700 delay-500 ${showStats ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
           <div className="pt-7 pb-6 px-7 bg-slate-50 border border-slate-100 rounded-[1.8rem] shadow-sm flex flex-col items-center min-h-[90px] justify-center relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0f1c3a] text-white text-[8px] font-black font-orbitron px-3.5 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-lg flex items-center gap-2">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0f1c3a] text-white text-[11px] font-black font-orbitron px-4 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-lg flex items-center gap-2">
               <span className="w-1 h-1 bg-[#2ecc71] rounded-full animate-pulse"></span>
-              AI ANALYSIS
+              AI REVIEW
             </div>
             <p className="text-[#0f1c3a] text-[12px] font-medium leading-relaxed italic text-center animate-fade-in opacity-80">
               {review ? `"${review}"` : "Decoding your rhythm signature..."}
@@ -97,12 +97,12 @@ const GameOver: React.FC<Props> = ({ username, scoreData, review, onRestart, onM
             className="w-full py-4 bg-[#0f1c3a] text-white font-orbitron font-black text-[11px] tracking-[0.4em] rounded-[1.2rem] transition-all shadow-[0_15px_30px_-10px_rgba(15,28,58,0.2)] active:scale-95 hover:bg-[#1a2b4d] hover:-translate-y-1 flex items-center justify-center gap-3 uppercase group"
           >
             <span>RESTART</span>
-            <i className="fa-solid fa-rotate-right text-[9px] group-hover:rotate-180 transition-transform duration-500"></i>
+            <i className="fa-solid fa-rotate-right text-[11px] group-hover:rotate-180 transition-transform duration-500"></i>
           </button>
-          
-          <button 
+
+          <button
             onPointerDown={onMenu}
-            className="w-full py-3 bg-transparent text-slate-400 font-orbitron text-[9px] tracking-[0.3em] rounded-[1.2rem] transition-all hover:text-[#0f1c3a] hover:bg-slate-50 active:scale-95 uppercase font-black"
+            className="w-full py-3 bg-transparent text-slate-600 font-orbitron text-[11px] tracking-[0.3em] rounded-[1.2rem] transition-all hover:text-[#0f1c3a] hover:bg-slate-50 active:scale-95 uppercase font-black"
           >
             RETURN TO MENU
           </button>
