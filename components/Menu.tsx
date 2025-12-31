@@ -35,13 +35,13 @@ const Menu: React.FC<Props> = ({ onStart, selectedSong, setSelectedSong, highSco
         </div>
       </div>
 
-      <div className="relative z-10 w-full flex-1 flex flex-col min-h-0">
+      <div className="relative z-10 w-full flex flex-col">
         <div className="flex justify-between items-center mb-3 px-1 text-[#0f1c3a]">
           <h2 className="text-xs font-orbitron font-black tracking-tight uppercase">MELODIES</h2>
           <span className="text-[10px] font-orbitron font-black uppercase tracking-widest bg-slate-100 px-2.5 py-1 rounded-full text-slate-600">PREMIUM</span>
         </div>
-        
-        <div className="grid grid-cols-2 gap-2.5 w-full flex-1 min-h-0 overflow-y-auto pr-0.5 custom-scrollbar pb-3">
+
+        <div className="grid grid-cols-2 gap-2.5 w-full overflow-y-auto pr-0.5 custom-scrollbar pb-3 max-h-[45vh]">
           {SONGS.map((song) => (
             <button
               key={song.id}

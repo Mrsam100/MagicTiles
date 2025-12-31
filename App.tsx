@@ -69,8 +69,8 @@ const App: React.FC = () => {
   const backToMenu = () => setStatus(GameStatus.MENU);
 
   return (
-    <div className="w-full h-screen bg-white flex justify-center items-center overflow-hidden">
-      <div className="game-container relative z-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] bg-white">
+    <div className="w-full h-dvh bg-white flex justify-center items-center overflow-hidden">
+      <div className="game-container relative z-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] bg-white overflow-hidden">
         
         {status === GameStatus.LOADING && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-50 px-6 sm:px-8 py-safe">
