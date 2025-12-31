@@ -23,6 +23,25 @@
         :root {
           --max-game-width: 100%;
         }
+
+        /* Optimize for mobile */
+        body {
+          font-size: 14px;
+        }
+
+        /* Ensure touch targets are at least 44px */
+        button,
+        input,
+        [role="button"] {
+          min-height: 44px;
+          min-width: 44px;
+        }
+      }
+
+      @media (min-width: 481px) and (max-width: 768px) {
+        :root {
+          --max-game-width: 100%;
+        }
       }
 
       @media (min-width: 768px) and (max-width: 1024px) {
@@ -34,6 +53,38 @@
       @media (min-width: 1024px) {
         :root {
           --max-game-width: 500px;
+        }
+      }
+
+      /* Mobile-specific optimizations */
+      @media (max-width: 768px) {
+        /* Better spacing for mobile */
+        .mobile-padding {
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+
+        /* Optimize font sizes */
+        h1 {
+          font-size: 1.25rem !important;
+        }
+
+        h2 {
+          font-size: 1.1rem !important;
+        }
+
+        /* Better touch targets */
+        .touch-target {
+          padding: 0.75rem !important;
+        }
+      }
+
+      /* Handle iPhone notch and safe areas */
+      @supports (padding: max(0px)) {
+        body {
+          padding-left: max(0px, env(safe-area-inset-left));
+          padding-right: max(0px, env(safe-area-inset-right));
+          padding-bottom: max(0px, env(safe-area-inset-bottom));
         }
       }
 

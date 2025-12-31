@@ -55,11 +55,11 @@ const GameHUD = React.memo(({ score, combo }: { score: number; combo: number }) 
   <div className="absolute top-[6%] left-0 right-0 flex flex-col items-center z-50 pointer-events-none">
     <div className="relative">
       <div className={`absolute -inset-6 blur-[20px] rounded-full transition-all duration-700 ${combo > 10 ? 'bg-white/25 scale-110' : 'bg-white/10 scale-90'}`}></div>
-      <div className="relative text-4xl font-orbitron text-white font-black leading-none tracking-tighter drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+      <div className="relative text-3xl sm:text-4xl font-orbitron text-white font-black leading-none tracking-tighter drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
         {score.toLocaleString()}
       </div>
       {combo > 2 && (
-        <div key={combo} className="mt-2 text-[12px] font-orbitron font-black text-center tracking-[0.4em] uppercase animate-combo-pop flex flex-col items-center text-white">
+        <div key={combo} className="mt-2 text-[11px] sm:text-[12px] font-orbitron font-black text-center tracking-[0.4em] uppercase animate-combo-pop flex flex-col items-center text-white">
           <div className="w-8 h-[2px] mb-2 rounded-full bg-white/50"></div>
           x{combo}
         </div>
@@ -381,7 +381,7 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
       
       {countdown !== null && (
         <div className="absolute inset-0 z-[200] flex items-center justify-center pointer-events-none">
-           <div key={countdown} className="text-5xl font-orbitron font-black text-white animate-countdown-zoom drop-shadow-[0_8px_32px_rgba(0,0,0,0.6)] uppercase">{countdown}</div>
+           <div key={countdown} className="text-4xl sm:text-5xl font-orbitron font-black text-white animate-countdown-zoom drop-shadow-[0_8px_32px_rgba(0,0,0,0.6)] uppercase">{countdown}</div>
         </div>
       )}
 
@@ -436,11 +436,11 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
       </div>
 
       {particles.map(p => <div key={p.id} className="particle text-2xl" style={{ left: p.x, top: p.y, color: p.color }}><i className="fa-solid fa-sparkle"></i></div>)}
-      
+
       {feedbacks.map(f => (
         <div key={f.id} className="fixed pointer-events-none z-[100] flex flex-col items-center animate-feedback-float" style={{ left: f.x, top: f.y }}>
-           <span className="text-sm font-orbitron font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{f.points}</span>
-           <span className={`text-xl font-orbitron font-black italic tracking-tighter ${f.color} drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]`}>
+           <span className="text-xs sm:text-sm font-orbitron font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{f.points}</span>
+           <span className={`text-lg sm:text-xl font-orbitron font-black italic tracking-tighter ${f.color} drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]`}>
              {f.text}
            </span>
         </div>
@@ -450,30 +450,32 @@ const MagicTiles: React.FC<Props> = ({ onGameOver, levelInfo }) => {
       {isPaused && (
         <div className="absolute inset-0 z-[300] bg-[#0f1c3a]/95 flex flex-col items-center justify-center gap-6 px-6">
           <div className="text-center mb-4">
-            <i className="fa-solid fa-pause text-white text-6xl mb-4 opacity-90"></i>
-            <h2 className="text-3xl font-orbitron font-black text-white uppercase tracking-tight mb-2">Paused</h2>
-            <p className="text-white/70 font-orbitron text-xs tracking-widest uppercase">Take a breath</p>
+            <i className="fa-solid fa-pause text-white text-5xl sm:text-6xl mb-4 opacity-90"></i>
+            <h2 className="text-2xl sm:text-3xl font-orbitron font-black text-white uppercase tracking-tight mb-2">Paused</h2>
+            <p className="text-white/70 font-orbitron text-[11px] sm:text-xs tracking-widest uppercase">Take a breath</p>
           </div>
 
           <div className="flex flex-col gap-3 w-full max-w-xs">
             <button
               onClick={togglePause}
-              className="w-full py-4 bg-white text-[#0f1c3a] font-orbitron font-black text-xs tracking-[0.3em] rounded-2xl shadow-xl hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
+              aria-label="Resume game"
+              className="w-full py-4 bg-white text-[#0f1c3a] font-orbitron font-black text-[10px] sm:text-xs tracking-[0.3em] rounded-2xl shadow-xl hover:bg-white/90 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase min-h-[52px]"
             >
-              <i className="fa-solid fa-play text-xs"></i>
+              <i className="fa-solid fa-play text-[10px] sm:text-xs"></i>
               Resume
             </button>
 
             <button
               onClick={() => window.location.reload()}
-              className="w-full py-3 bg-transparent text-white/80 font-orbitron font-black text-xs tracking-[0.3em] rounded-2xl hover:bg-white/10 active:scale-95 transition-all uppercase border-2 border-white/20"
+              aria-label="Quit to menu"
+              className="w-full py-3 bg-transparent text-white/80 font-orbitron font-black text-[10px] sm:text-xs tracking-[0.3em] rounded-2xl hover:bg-white/10 active:scale-95 transition-all uppercase border-2 border-white/20 min-h-[48px]"
             >
-              <i className="fa-solid fa-arrow-left text-xs mr-2"></i>
+              <i className="fa-solid fa-arrow-left text-[10px] sm:text-xs mr-2"></i>
               Quit to Menu
             </button>
           </div>
 
-          <p className="text-white/50 font-orbitron text-[10px] tracking-wider uppercase mt-4">
+          <p className="text-white/50 font-orbitron text-[9px] sm:text-[10px] tracking-wider uppercase mt-4">
             Press <kbd className="px-2 py-1 bg-white/10 rounded">ESC</kbd> or <kbd className="px-2 py-1 bg-white/10 rounded">P</kbd> to resume
           </p>
         </div>

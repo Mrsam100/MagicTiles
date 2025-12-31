@@ -70,12 +70,13 @@ const Menu: React.FC<Props> = ({ onStart, selectedSong, setSelectedSong, highSco
       </div>
 
       <div className="relative z-10 w-full mt-3">
-        <button 
+        <button
           onPointerDown={onStart}
-          className="w-full py-4 bg-[#0f1c3a] text-white font-orbitron font-black text-[11px] tracking-[0.3em] rounded-[1.5rem] shadow-xl active:scale-95 hover:bg-[#1a2b4d] transition-all duration-300 flex items-center justify-center gap-3 group"
+          aria-label="Start performance"
+          className="w-full py-4 bg-[#0f1c3a] text-white font-orbitron font-black text-[10px] sm:text-[11px] tracking-[0.25em] sm:tracking-[0.3em] rounded-[1.5rem] shadow-xl active:scale-95 hover:bg-[#1a2b4d] transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 group min-h-[52px]"
         >
           START PERFORMANCE
-          <i className="fa-solid fa-play text-[11px] group-hover:translate-x-1 transition-transform"></i>
+          <i className="fa-solid fa-play text-[10px] sm:text-[11px] group-hover:translate-x-1 transition-transform"></i>
         </button>
       </div>
 
